@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalyst Predictor</title>
+  <link rel="icon" type="image/png" href="icon.png" />
+  <script src="https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js"></script>
+  <style>
+
+
+    .citation-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .meta-pill {
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: #0f172a;
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .meta-pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .citation-desc {
+      margin: 0 0 0.8rem;
+      color: var(--muted);
+    }
+    .citation-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+    }
+    .citation-box a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .citation-box a:hover {
+      text-decoration: underline;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .page-header p.subtitle {
+      margin-bottom: 0;
+    }
+    .about-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .about-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+
+    :root {
+      --bg: #0f172a; --card: #1e293b; --border: #334155;
+      --text: #f1f5f9; --muted: #94a3b8; --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding: 2rem 1rem; }
+    .container { max-width: 820px; margin: 0 auto; }
+    h1 {
+      margin: 0 0 0.5rem; font-size: 1.85rem;
+      display: flex; align-items: center; gap: 0.65rem;
+    }
+    .title-icon { width: 36px; height: 36px; object-fit: contain; border-radius: 6px; }
+    p.subtitle { color: var(--muted); margin: 0 0 1.5rem; line-height: 1.5; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem;
+    }
+    label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.4rem; }
+    input[type="text"], input:not([type]) {
+      width: 100%; padding: 0.7rem 0.9rem; border-radius: 8px;
+      border: 1px solid var(--border); background: #0f172a; color: var(--text);
+      font-family: ui-monospace, monospace; font-size: 0.95rem; margin-bottom: 0.6rem;
+    }
+    .slider-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;
+    }
+    .slider-value {
+      background: #0f172a; border: 1px solid var(--border); color: var(--accent);
+      font-weight: 700; font-size: 0.85rem; padding: 0.15rem 0.6rem; border-radius: 999px;
+    }
+    input[type="range"] {
+      width: 100%; accent-color: var(--accent); cursor: pointer;
+      margin: 0.2rem 0 1.1rem; padding: 0; border: none; background: transparent;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+    .preview-box {
+      height: 130px; border: 1px dashed var(--border); border-radius: 8px;
+      background: #0f172a; display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .preview-msg { color: var(--muted); font-size: 0.82rem; padding: 0.5rem; text-align: center; }
+    .examples { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.2rem; }
+    .chip {
+      background: #0f172a; border: 1px solid var(--border); color: var(--accent);
+      padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.82rem; cursor: pointer;
+    }
+    .chip:hover { border-color: var(--accent); }
+    button.primary {
+      width: 100%; padding: 0.85rem; border: none; border-radius: 8px;
+      background: var(--accent); color: #0f172a; font-weight: 700; font-size: 1rem; cursor: pointer;
+    }
+    button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status { margin-top: 0.8rem; font-size: 0.9rem; color: var(--muted); }
+    .error { color: #f87171; }
+    .pred-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-top: 0.75rem;
+      background: #0f172a;
+    }
+    .pred-smiles-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.2rem; }
+    .pred-smiles { font-family: ui-monospace, monospace; word-break: break-all; font-size: 0.95rem; }
+    .copy-btn {
+      background: #1e293b; border: 1px solid var(--border); color: var(--muted);
+      padding: 0.35rem; border-radius: 6px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .copy-btn.copied { border-color: #4ade80; color: #4ade80; }
+    .badge {
+      display: inline-block; font-size: 0.75rem; padding: 0.2rem 0.5rem;
+      border-radius: 6px; margin-top: 0.4rem; background: #1e293b; color: var(--muted);
+    }
+    canvas { background: #ffffff; border-radius: 8px; flex-shrink: 0; }
+    .clickable-mol { cursor: zoom-in; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .clickable-mol:hover { transform: scale(1.03); box-shadow: 0 0 0 2px var(--accent); }
+
+    /* Molecule Zoom Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-content {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.25rem; max-width: 640px; width: 100%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;
+    }
+    .modal-title { font-weight: 700; font-size: 1.05rem; }
+    .modal-close {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      width: 32px; height: 32px; border-radius: 8px; font-size: 1.2rem; line-height: 1;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { border-color: var(--accent); color: var(--text); }
+    .modal-canvas-wrap {
+      display: flex; justify-content: center; background: #ffffff;
+      border-radius: 10px; padding: 0.5rem; overflow: hidden;
+    }
+    #modal-canvas { max-width: 100%; height: auto; }
+    .modal-smiles {
+      margin-top: 0.85rem; padding: 0.6rem 0.8rem; background: #0f172a;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-family: ui-monospace, monospace; font-size: 0.88rem; word-break: break-all;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="page-header">
+      <div>
+        <h1>
+          <img src="icon.png" alt="Catalyst Predictor Icon" class="title-icon" />
+          Chemical Catalyst Predictor
+        </h1>
+        <p class="subtitle">
+          Chemical reaction catalyst predictor.
+        </p>
+      </div>
+      <button class="about-btn" type="button" onclick="openAboutModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        About
+      </button>
+    </header>
+
+    <div class="card">
+      <div class="examples">
+        <span style="color: var(--muted); font-size: 0.85rem; align-self: center;">Try an example:</span>
+        <button class="chip" onclick="loadExample('CC(=O)O.OCC', 'CC(=O)OCC')">Esterification</button>
+        <button class="chip" onclick="loadExample('Brc1ccccc1.OB(O)c1ccccc1', 'c1ccc(-c2ccccc2)cc1')">Suzuki Coupling</button>
+        <button class="chip" onclick="loadExample('c1ccc(C=O)cc1.CC(=O)C', 'CC(=O)/C=C/c1ccccc1')">Aldol Condensation</button>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="reactants">Reactants SMILES</label>
+          <input type="text" id="reactants" placeholder="e.g. CC(=O)O.OCC" oninput="renderPreview('reactants')" />
+          <div class="preview-box">
+            <canvas
+              id="reactants-canvas"
+              class="clickable-mol"
+              width="320"
+              height="120"
+              style="display: none;"
+              title="Click to enlarge"
+              onclick="openPreviewModal('reactants', 'Reactants Structure')"
+            ></canvas>
+            <span id="reactants-msg" class="preview-msg">Structure preview</span>
+          </div>
+        </div>
+        <div>
+          <label for="product">Product SMILES</label>
+          <input type="text" id="product" placeholder="e.g. CC(=O)OCC" oninput="renderPreview('product')" />
+          <div class="preview-box">
+            <canvas
+              id="product-canvas"
+              class="clickable-mol"
+              width="320"
+              height="120"
+              style="display: none;"
+              title="Click to enlarge"
+              onclick="openPreviewModal('product', 'Product Structure')"
+            ></canvas>
+            <span id="product-msg" class="preview-msg">Structure preview</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="slider-header">
+        <label for="topk" style="margin-bottom: 0;">Number of Catalyst Suggestions (Top-k)</label>
+        <span id="topk-val" class="slider-value">3</span>
+      </div>
+      <input
+        type="range"
+        id="topk"
+        min="1"
+        max="10"
+        value="3"
+        oninput="document.getElementById('topk-val').textContent = this.value"
+      />
+
+      <button class="primary" id="predictBtn" onclick="predict()">Predict Catalyst</button>
+      <div id="status" class="status"></div>
+    </div>
+
+    <div id="resultsCard" class="card" style="display: none;">
+      <h2 style="margin: 0 0 0.5rem; font-size: 1.2rem;">Predicted Catalysts</h2>
+      <div id="resultsList"></div>
+    </div>
+
+
+
+<!-- About & Attribution Modal -->
+  <div id="aboutModal" class="modal-backdrop" onclick="if (event.target === this) closeAboutModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-title">About</span>
+        <button class="modal-close" type="button" onclick="closeAboutModal()" aria-label="Close">&times;</button>
+      </div>
+
+      <p class="citation-desc">
+        This model was trained on chemical reaction data from the Open Reaction Database (ORD),
+        licensed under CC BY-SA 4.0.
+      </p>
+
+      <div class="citation-links" style="margin-bottom: 1rem;">
+        <a class="meta-pill" href="https://open-reaction-database.org" target="_blank" rel="noopener noreferrer">ORD Website ↗</a>
+        <a class="meta-pill" href="https://github.com/open-reaction-database/ord-data" target="_blank" rel="noopener noreferrer">GitHub Data ↗</a>
+        <a class="meta-pill" href="https://doi.org/10.5281/zenodo.4321713" target="_blank" rel="noopener noreferrer">DOI: 10.5281/zenodo.4321713</a>
+        <a class="meta-pill" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
+      </div>
+
+      <div class="citation-box">
+        Kearnes, S. M.; Maser, M. R.; Wleklinski, M.; Kast, A.; Doyle, A. G.; Dreher, S. D.;
+        Hawkins, J. M.; Jensen, K. F.; Coley, C. W. The Open Reaction Database.
+        <em>J. Am. Chem. Soc.</em> <strong>2021</strong>, <em>143</em> (45), 18820–18826.
+        <a href="https://doi.org/10.1021/jacs.1c09820" target="_blank" rel="noopener noreferrer">https://doi.org/10.1021/jacs.1c09820</a>
+      </div>
+    </div>
+  </div>
+</div>
+  <div id="molModal" class="modal-backdrop" onclick="if (event.target === this) closeModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modalTitle" class="modal-title">Molecule Structure</span>
+        <button class="modal-close" type="button" onclick="closeModal()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-canvas-wrap">
+        <canvas id="modal-canvas" width="560" height="400"></canvas>
+      </div>
+      <div id="modalSmiles" class="modal-smiles"></div>
+    </div>
+  </div>
+
+  <script>
+    // Replace with the URL printed by `modal deploy backend/modal_app.py`
+    const API_URL = "https://serafettingungor--catalyst-predictor-api-catalystpredict-9aafb5.us-east.modal.run";
+
+    const COPY_ICON = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>`;
+
+    const CHECK_ICON = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>`;
+
+    function openModal(smiles, title) {
+      const modal = document.getElementById("molModal");
+      document.getElementById("modalTitle").textContent = title;
+      document.getElementById("modalSmiles").textContent = smiles;
+      modal.classList.add("open");
+
+      SmilesDrawer.parse(smiles, (tree) => {
+        const sd = new SmilesDrawer.Drawer({ width: 560, height: 400 });
+        sd.draw(tree, "modal-canvas", "light", false);
+      });
+    }
+
+    function openPreviewModal(fieldId, title) {
+      const smiles = document.getElementById(fieldId).value.trim();
+      if (smiles) openModal(smiles, title);
+    }
+
+    function closeModal() {
+      document.getElementById("molModal").classList.remove("open");
+    }
+
+    function openAboutModal() {
+      document.getElementById("aboutModal").classList.add("open");
+    }
+
+    function closeAboutModal() {
+      document.getElementById("aboutModal").classList.remove("open");
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeModal();
+        closeAboutModal();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+
+    function renderPreview(fieldId) {
+      const smiles = document.getElementById(fieldId).value.trim();
+      const canvas = document.getElementById(`${fieldId}-canvas`);
+      const msg = document.getElementById(`${fieldId}-msg`);
+
+      if (!smiles) {
+        canvas.style.display = "none";
+        msg.style.display = "block";
+        msg.textContent = "Structure preview";
+        return;
+      }
+
+      SmilesDrawer.parse(
+        smiles,
+        (tree) => {
+          canvas.style.display = "block";
+          msg.style.display = "none";
+          const sd = new SmilesDrawer.Drawer({ width: 320, height: 120 });
+          sd.draw(tree, `${fieldId}-canvas`, "light", false);
+        },
+        () => {
+          canvas.style.display = "none";
+          msg.style.display = "block";
+          msg.textContent = "Invalid or incomplete SMILES";
+        }
+      );
+    }
+
+    function loadExample(r, p) {
+      document.getElementById("reactants").value = r;
+      document.getElementById("product").value = p;
+      renderPreview("reactants");
+      renderPreview("product");
+    }
+
+    async function copySmiles(text, buttonEl) {
+      try {
+        await navigator.clipboard.writeText(text);
+        buttonEl.innerHTML = CHECK_ICON;
+        buttonEl.classList.add("copied");
+        setTimeout(() => {
+          buttonEl.innerHTML = COPY_ICON;
+          buttonEl.classList.remove("copied");
+        }, 1500);
+      } catch {
+        // Clipboard permission denied
+      }
+    }
+
+    async function predict() {
+      const reactants = document.getElementById("reactants").value.trim();
+      const product = document.getElementById("product").value.trim();
+      const top_k = parseInt(document.getElementById("topk").value, 10);
+      const btn = document.getElementById("predictBtn");
+      const status = document.getElementById("status");
+      const resultsCard = document.getElementById("resultsCard");
+      const resultsList = document.getElementById("resultsList");
+
+      if (!reactants || !product) {
+        status.innerHTML = '<span class="error">Please enter both reactant and product SMILES.</span>';
+        return;
+      }
+
+      btn.disabled = true;
+      status.textContent = "Running inference... (it may take a few seconds)";
+      resultsCard.style.display = "none";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reactants_smiles: reactants, product_smiles: product, top_k }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Prediction failed.");
+
+        resultsList.innerHTML = "";
+
+        data.predictions.forEach((item, idx) => {
+          const div = document.createElement("div");
+          div.className = "pred-item";
+          const canvasId = `mol-canvas-${idx}`;
+
+          div.innerHTML = `
+            <div>
+              <div style="color: var(--muted); font-size: 0.8rem;">Rank #${item.rank}</div>
+              <div class="pred-smiles-row">
+                <span class="pred-smiles"></span>
+                <button class="copy-btn" type="button" title="Copy SMILES" aria-label="Copy SMILES">${COPY_ICON}</button>
+              </div>
+              <span class="badge">${
+                item.no_catalyst ? "No Catalyst Required" : item.valid ? "Valid SMILES ✔️" : "Unverified SMILES ✖️"
+              }</span>
+            </div>
+            ${item.valid && !item.no_catalyst ? `<canvas id="${canvasId}" class="clickable-mol" width="140" height="100" title="Click to enlarge"></canvas>` : ""}
+          `;
+
+          div.querySelector(".pred-smiles").textContent = item.smiles;
+          const copyBtn = div.querySelector(".copy-btn");
+          copyBtn.addEventListener("click", () => copySmiles(item.smiles, copyBtn));
+
+          resultsList.appendChild(div);
+
+          if (item.valid && !item.no_catalyst) {
+            const molCanvas = document.getElementById(canvasId);
+            molCanvas.addEventListener("click", () =>
+              openModal(item.smiles, `Predicted Catalyst (Rank #${item.rank})`)
+            );
+
+            SmilesDrawer.parse(item.smiles, (tree) => {
+              const sd = new SmilesDrawer.Drawer({ width: 140, height: 100 });
+              sd.draw(tree, canvasId, "light", false);
+            });
+          }
+        });
+
+        resultsCard.style.display = "block";
+        status.textContent = "Done.";
+      } catch (err) {
+        status.innerHTML = `<span class="error">Error: ${err.message}</span>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
